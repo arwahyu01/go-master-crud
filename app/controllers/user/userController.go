@@ -19,6 +19,7 @@ func GetAllUser(w http.ResponseWriter, r *http.Request) {
 
 	helpers.ResponseJSON(w, http.StatusOK, pagination)
 }
+
 func GetProfile(w http.ResponseWriter, r *http.Request) {
 	userID, err := helpers.GetUserID(r)
 	if err != nil {

@@ -13,18 +13,19 @@ Go Master CRUD adalah aplikasi REST API sederhana menggunakan Golang dan GORM un
 ```
 /go-master-crud
 │── app/
-│   ├── controllers/      # Controller untuk request API
-│   ├── models/           # Model database dengan GORM
-│   ├── routes/           # Routing API
-│   ├── middlewares/      # Middleware seperti authentication
-│   ├── helpers/          # Helper functions seperti response JSON
+│   ├── controllers/        # Controller untuk request API
+│   ├── middlewares/        # Middleware seperti authentication
+│   ├── models/             # Model database dengan GORM
+│── config/                 # Konfigurasi aplikasi
+│── helpers/                # Helper functions seperti response JSON
+│── routes/                 # Routing API
+│── database/
+│   ├── setup.go            # Konfigurasi database dan migrasi
+|   |── migrations/         # File migrasi database
 │
-│── config/
-│   ├── database.go       # Konfigurasi database dan migrasi
-│
-│── .env                  # Konfigurasi environment
-│── go.mod                # Go Modules
-│── main.go               # Entry point aplikasi
+│── .env                    # Konfigurasi environment
+│── go.mod                  # Go Modules
+│── main.go                 # Entry point aplikasi
 ```
 
 ## 🔧 Instalasi
@@ -61,11 +62,11 @@ go run main.go
 - **`POST /api/login`** - Login dan mendapatkan token JWT
 
 ### 2️⃣ User Management
-- **`GET /api/users?page=1&page_size=10&sort=name&filter=admin`** - Get all users (Pagination, Sorting, Filtering)
-- **`GET /api/users/{id}`** - Get user by ID
-- **`POST /api/users`** - Create new user
-- **`PUT /api/users/{id}`** - Update user
-- **`DELETE /api/users/{id}`** - Delete user
+- **`GET /api/user?page=1&page_size=10&sort=name&filter=admin`** - Get all users (Pagination, Sorting, Filtering)
+- **`GET /api/user/{id}`** - Get user by ID
+- **`POST /api/user`** - Create new user
+- **`PUT /api/user/{id}`** - Update user
+- **`DELETE /api/user/{id}`** - Delete user
 
 ## 🛠 Teknologi yang Digunakan
 - **Golang** (Backend)
@@ -74,8 +75,8 @@ go run main.go
 - **Mux** (Routing)
 - **JWT** (Authentication)
 
-## 📜 Lisensi
-Proyek ini menggunakan lisensi MIT.
+## 📜 Status Proyek
+Dalam pengembangan
 
 ---
 📌 Dibuat dengan ❤️ oleh ARWP
