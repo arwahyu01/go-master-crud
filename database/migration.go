@@ -3,12 +3,12 @@ package database
 import (
 	"log"
 
-	"github.com/arwahyu01/go-jwt/app/models"
+	"github.com/arwahyu01/go-jwt/app/models/user"
 )
 
 func AutoMigrateTables() {
 	err := DB.AutoMigrate(
-		&models.Users{},
+		&user.Users{},
 	)
 	if err != nil {
 		log.Fatalf("Migration failed: %v", err)

@@ -5,12 +5,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/arwahyu01/go-jwt/helpers"
+	"github.com/arwahyu01/go-jwt/helpers/auth"
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -29,14 +29,14 @@ func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		// Simpan User ID ke context
 		userID, ok := claims["id"].(string)
 		if !ok {
 			http.Error(w, "Invalid token payload", http.StatusUnauthorized)
 			return
 		}
 
-		r = helpers.SetUserToContext(r, userID)
-		next(w, r)
-	}
+		r = auth.SetUserToContext(r, userID)
+
+		next.ServeHTTP(w, r)
+	})
 }

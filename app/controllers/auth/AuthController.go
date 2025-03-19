@@ -3,62 +3,63 @@ package auth
 import (
 	"encoding/json"
 	"github.com/arwahyu01/go-jwt/database"
-	"github.com/arwahyu01/go-jwt/helpers"
+	"github.com/arwahyu01/go-jwt/helpers/response"
+	"github.com/arwahyu01/go-jwt/helpers/validation"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/arwahyu01/go-jwt/app/models"
+	"github.com/arwahyu01/go-jwt/app/models/user"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	var request struct {
-		Username string `json:"username" validate:"required"`
+	var req struct {
+		Email    string `json:"email" validate:"required"`
 		Password string `json:"password" validate:"required"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		helpers.ResponseJSON(w, http.StatusBadRequest, map[string]string{"message": "Invalid request"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Json(w, http.StatusBadRequest, map[string]string{"message": "Invalid req"})
 		return
 	}
 
-	var user models.Users
-	if err := database.DB.Where("username = ?", request.Username).First(&user).Error; err != nil {
-		helpers.ResponseJSON(w, http.StatusUnauthorized, map[string]string{"message": "Username or password is incorrect"})
+	var userData user.Users
+	if err := database.DB.Where("email = ?", req.Email).First(&userData).Error; err != nil {
+		response.Json(w, http.StatusUnauthorized, map[string]string{"message": "Username or password is incorrect"})
 		return
 	}
 
 	// Cek password
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(request.Password)); err != nil {
-		helpers.ResponseJSON(w, http.StatusUnauthorized, map[string]string{"message": "Username or password is incorrect"})
+	if err := bcrypt.CompareHashAndPassword([]byte(userData.Password), []byte(req.Password)); err != nil {
+		response.Json(w, http.StatusUnauthorized, map[string]string{"message": "password is incorrect"})
 		return
 	}
 
 	// Buat token JWT
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := jwt.MapClaims{
-		"id":       user.ID.String(),
-		"username": user.Username,
-		"exp":      expirationTime.Unix(),
+		"id":    userData.ID.String(),
+		"email": userData.Email,
+		"exp":   expirationTime.Unix(),
 	}
 
 	// Generate token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString([]byte(os.Getenv("JWT_SECRET")))
 	if err != nil {
-		helpers.ResponseJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error generating token"})
+		response.Json(w, http.StatusInternalServerError, map[string]string{"message": "Error generating token"})
 		return
 	}
 
-	helpers.ResponseJSON(w, http.StatusOK, map[string]interface{}{
+	response.Json(w, http.StatusOK, map[string]interface{}{
 		"code":    http.StatusOK,
 		"status":  "success",
 		"message": "Login successful",
-		"user": map[string]string{
-			"id":       user.ID.String(),
-			"username": user.Username,
+		"userData": map[string]string{
+			"id":    userData.ID.String(),
+			"email": userData.Email,
 		},
 		"meta": map[string]interface{}{
 			"token":   tokenString,
@@ -68,57 +69,54 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func Register(w http.ResponseWriter, r *http.Request) {
-	var request struct {
+	var req struct {
 		Nama     string `json:"nama" validate:"required"`
-		Username string `json:"username" validate:"required,min=3,max=20"`
+		Email    string `json:"email" validate:"required,min=3,max=20"`
 		Password string `json:"password" validate:"required,min=6"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		helpers.ResponseJSON(w, http.StatusBadRequest, map[string]string{"message": "Invalid request"})
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		response.Json(w, http.StatusBadRequest, map[string]string{"message": "Invalid request"})
 		return
 	}
 
-	errors := helpers.ValidateStruct(request)
-	if len(errors) > 0 {
-		helpers.ResponseJSON(w, http.StatusBadRequest, errors)
+	errors, valid := validation.Request(req, nil)
+	if !valid {
+		response.Json(w, http.StatusBadRequest, errors)
 		return
 	}
 
-	// Cek username
-	var existingUser models.Users
-	if err := database.DB.Where("username = ?", request.Username).First(&existingUser).Error; err == nil {
-		helpers.ResponseJSON(w, http.StatusBadRequest, map[string]string{"message": "Username already taken"})
+	var existingUser user.Users
+	if err := database.DB.Where("username = ?", req.Email).First(&existingUser).Error; err == nil {
+		response.Json(w, http.StatusBadRequest, map[string]string{"message": "Username already taken"})
 		return
 	}
 
-	// Hash password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(request.Password), bcrypt.DefaultCost)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
 	if err != nil {
-		helpers.ResponseJSON(w, http.StatusInternalServerError, map[string]string{"message": "Error hashing password"})
+		response.Json(w, http.StatusInternalServerError, map[string]string{"message": "Error hashing password"})
 		return
 	}
 
-	// Simpan user
-	user := models.Users{
-		Nama:     request.Nama,
-		Username: request.Username,
-		Password: string(hashedPassword),
+	userData := user.Users{
+		FirstName: req.Nama,
+		Email:     req.Email,
+		Password:  string(hashedPassword),
 	}
 
-	if err := database.DB.Create(&user).Error; err != nil {
-		helpers.ResponseJSON(w, http.StatusInternalServerError, map[string]string{"message": "Failed to register user"})
+	if err := database.DB.Create(&userData).Error; err != nil {
+		response.Json(w, http.StatusInternalServerError, map[string]string{"message": "Failed to register user"})
 		return
 	}
 
-	helpers.ResponseJSON(w, http.StatusCreated, map[string]interface{}{
+	response.Json(w, http.StatusCreated, map[string]interface{}{
 		"code":    http.StatusCreated,
 		"status":  "success",
 		"message": "Register successful",
-		"user": map[string]interface{}{
-			"id":       user.ID.String(),
-			"nama":     user.Nama,
-			"username": user.Username,
+		"userData": map[string]interface{}{
+			"id":       userData.ID.String(),
+			"nama":     userData.FirstName,
+			"username": userData.Email,
 		},
 	})
 }
@@ -127,5 +125,5 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	// Tidak ada cara untuk "mematikan" token JWT di backend secara langsung
 	// Biasanya token dihapus dari client-side atau menggunakan blocklist di server (opsional)
 
-	helpers.ResponseJSON(w, http.StatusOK, map[string]string{"message": "Logout successful. Please delete your token from client."})
+	response.Json(w, http.StatusOK, map[string]string{"message": "Logout successful. Please delete your token from client."})
 }

@@ -25,5 +25,5 @@ func Connect() {
 		log.Fatal("Failed to connect to database!", err)
 	}
 
-	AutoMigrateTables()
+	//AutoMigrateTables()
 }

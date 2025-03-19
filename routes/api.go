@@ -13,7 +13,9 @@ func ApiRoutes(r *mux.Router) {
 	api.HandleFunc("/register", AuthController.Register).Methods("POST")
 	api.HandleFunc("/logout", AuthController.Logout).Methods("GET")
 
-	// Routes yang butuh autentikasi
-	api.HandleFunc("/user", middleware.AuthMiddleware(UserController.GetAllUser)).Methods("GET")
-	api.HandleFunc("/profile", middleware.AuthMiddleware(UserController.GetProfile)).Methods("GET")
+	user := api.PathPrefix("/user").Subrouter()
+	user.Use(middleware.AuthMiddleware)
+	user.HandleFunc("", UserController.GetAllUser).Methods("GET")
+	user.HandleFunc("/{id}", UserController.UpdateUser).Methods("PUT")
+	user.HandleFunc("/profile", UserController.GetProfile).Methods("GET")
 }
